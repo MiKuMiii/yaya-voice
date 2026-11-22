@@ -34,9 +34,10 @@ TTS = os.environ.get("VOICE_TTS", "http://127.0.0.1:9880")
 BRAIN = os.environ.get("VOICE_BRAIN", "")          # 大脑基址；空则只靠扫描/备用列表发现
 ASR = os.environ.get("VOICE_ASR", "http://127.0.0.1:9883")
 
-# 参考音换成「训练集里的一句说话」（RVC 后的初音说话声，5.52s）：
-# 模型是拿说话数据微调的（BZNSYP 36 分钟 + RVC 变音色），所以参考音也用说话声，
-# 谱心 1652Hz（唱腔那版是 2695Hz），基频 296Hz 不变。
+# 参考音是「一句话的干声」（实测 5.5s 最稳）。要求：
+#   · 3~10 秒、单人、无伴奏无混响
+#   · 与 VOICE_PROMPT 指向的文本**逐字对应**，否则合成会念崩
+#   · 用了谁的声音就是你自己的事：公开分发他人音色（含虚拟歌手）有法律风险，见 CREDITS.md
 REF_WAV = os.environ.get("VOICE_REF", "")          # TTS 参考音（3~10s 干声）；空则 /tts 必 502
 PROMPT_TXT = os.environ.get("VOICE_PROMPT", "")    # 与参考音逐字对应的文本文件
 PROMPT_LANG = os.environ.get("VOICE_PROMPT_LANG", "zh")
@@ -149,7 +150,9 @@ def prompt_text() -> str:
         try:
             _prompt_cache["p"] = open(PROMPT_TXT, encoding="utf-8-sig").read().strip()
         except Exception:
-            _prompt_cache["p"] = "Miku, Miku, you can call me Miku"
+            # 没有 prompt 文本文件时留空：GPT-SoVITS 会退化成「无提示」合成，
+            # 音色会漂，但至少不崩。正式部署请务必配上 VOICE_PROMPT。
+            _prompt_cache["p"] = ""
     return _prompt_cache["p"]
 
 
