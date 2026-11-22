@@ -162,7 +162,7 @@ LANGS = ("zh", "en", "ja", "ko", "yue", "auto", "all_zh", "all_ja")
 # 主人要求「雅雅」念第二声（yá yá）。汉字「雅」是第三声，模型念出来是下坠调，
 # 听着发闷；换成同音的「牙」就是第二声，字幕照旧写「雅雅」。
 # 只改送进 TTS 的文本，不改任何对外字段。VOICE_NAME_SAY=off 可关掉。
-NAME_SAY = os.environ.get("VOICE_NAME_SAY", "牙牙")
+NAME_SAY = os.environ.get("VOICE_NAME_SAY", "")  # 空=不改字：实测「雅雅」本字念得对，改写成「牙牙」反而听成牙牙
 NAME_WRITE = "雅雅"
 
 
