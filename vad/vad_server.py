@@ -369,16 +369,16 @@ def stream_process(sid: str, raw: bytes, reset: bool):
             log.info("sid=%s new session (live %d)", sid, len(_sessions))
         elif s.closed:
             # 上一轮已判完：播放期/在想的时候客户端可能还在发包。
-            # 连续在途包（间隔 <1.2s）一律回 thinking 并丢弃，别把状态扳回 listening；
-            # 停顿超过 1.2s 说明是新的一轮（唤醒后重新开流），就地重开；
-            # 一直不停发超过 20s 也重开，免得客户端忘了 reset 把会话卡死。
-            if now - s.last < STREAM_REOPEN_GAP_S and now - s.closed_at < STREAM_CLOSED_MAX_S:
+            # 判完后 0.35s 内的包算上一轮尾巴，回 thinking 丢掉（别把状态扳回 listening）；
+            # 过了这个窗口就当新的一轮重开。
+            # 注意：门槛用「距判完的时间」而不是「距上一个包的间隔」——
+            # 客户端补发/burst 时包间隔可能只有几十毫秒，用间隔判会永远卡在 closed 里。
+            if now - s.closed_at < STREAM_REOPEN_GAP_S and now - s.closed_at < STREAM_CLOSED_MAX_S:
                 s.last = now
                 s.tickets += 1
                 return {"sid": sid, "state": "thinking", "speech": False, "end": False,
                         "seg": [], "ms": 1, "dropped": True}
-            log.info("sid=%s reopened (gap=%.1fs closed=%.1fs)", sid, now - s.last,
-                     now - s.closed_at)
+            log.info("sid=%s reopened (closed=%.1fs)", sid, now - s.closed_at)
             s.reopen()
 
         t0 = time.time()

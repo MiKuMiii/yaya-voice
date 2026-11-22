@@ -70,6 +70,7 @@ AWAKE_KEEP_S = 30.0   # 一轮结束后保持「醒着」的时长，便于连�
 SESSION_IDLE_S = 120.0
 # 回完话之后再这么久没有新包，就把会话退回 idle（别挂在 thinking / dropped 上）
 IDLE_RESET_S = 20.0
+RESUME_AFTER_UNDO_S = float(os.environ.get("VOICE_RESUME_S", "2.0"))  # 悔棋后多久没新声就按已说的收尾
 # end 之后再压这么久才真回话：这期间又出现人声就作废这一轮（隔壁 11-18 要求的「悔棋」）
 TURN_GRACE_MS = int(os.environ.get("VOICE_GRACE", "700"))
 # 每段回复的播放预算（毫秒），手机拿它判断要不要抢话打断
@@ -505,6 +506,7 @@ class Session:
         self.pending = None     # 判完 end、还在悔棋窗口里的一轮 {"text":..,"t":..}
         self.filler_q = None    # 悔棋窗口过了才生成的垫音，等下一个包带回去
         self.turn_seq = 0       # 第几轮：/voice_edge/end 一按就 +1，跑着的 run_turn 自己发现作废
+        self.resume_id = 0      # 悔棋后的兜底定时器编号：一有新人声就 +1，让旧定时器空转
         self.roll = bytearray()  # 最近几秒的原始 PCM，KWS 命中时倒着取 [命中前 2s]
         self.dump = None        # 正在攒的留证 wav {"buf": bytearray, "need": int, "model": str}
 
@@ -819,6 +821,31 @@ def schedule_pending(sess, pend):
     threading.Thread(target=_run, daemon=True).start()
 
 
+def schedule_after_undo(sess):
+    """悔棋之后：如果主人其实已经说完了（一直没再出声），别干等 9884 的 6 秒超时。
+    2 秒内没等到新的 end、也没有新的人声，就拿已经攒下的前缀开这一轮。
+    任何新的人声都会把 resume_id +1，让这个定时器变成空操作。"""
+    with _lock:
+        sess.resume_id += 1
+        rid = sess.resume_id
+    threading.Timer(RESUME_AFTER_UNDO_S, _resume_fire, args=(sess, rid)).start()
+
+
+def _resume_fire(sess, rid):
+    with _lock:
+        if rid != sess.resume_id:
+            return                       # 期间又有人声/又判了一轮，放弃
+        if sess.busy or sess.pending is not None:
+            return
+        text = _clean_user_text(sess.prefix)
+        if len(text) < 2:
+            return
+        sess.prefix = ""
+        sess.resume_id += 1
+    log.info("sid=%s resume fire (悔棋后 %.1fs 无新声) text=%r", sess.sid, RESUME_AFTER_UNDO_S, text[:40])
+    fire_turn(sess, text, True, deliver_filler=True)
+
+
 # ---------------------------------------------------------------- 一轮回复
 def run_turn(sess: Session, user_text: str, want_filler: bool, seq: int):
     """后台线程：问大脑 -> 逐句 TTS -> 推 reply/more；最后推 end。
@@ -1034,15 +1061,28 @@ async def voice_edge(request: Request):
     # 悔棋：刚判了 end、还在窗口里，又听到人声 -> 这一轮不算说完，那截文本并回前缀
     # （既看 VAD 的 speech，也看能量：9884 收尾后的几十毫秒里 VAD 可能还没重新开口）
     loud = _peak(np.frombuffer(pcm, dtype=np.int16)) >= KWS_PEAK_MIN
+    undone = False
     if sess.pending is not None and (speech or loud) and not end:
         pend = sess.pending
         sess.pending = None
         if pend.get("text"):
-            sess.prefix = (sess.prefix + "，" + pend["text"]).strip("，")
+            # 只并「像一句话」的片段：VAD 在词中间截断时会吐出 1 个字的残渣（实测出现过「在」），
+            # 并进前缀就变成「…很多了，在」，送进大脑会把句子读歪。
+            frag = pend["text"].strip()
+            if len(_strip_wake(frag)) >= 2 and frag not in sess.prefix:
+                sess.prefix = (sess.prefix + "，" + frag).strip("，")
+        undone = True
         log.info("sid=%s undo end, keep listening (prefix=%r)", sid, sess.prefix[:30])
 
     if not end:
         ev = {"event": "recording", "sid": sid}
+        if speech or loud:
+            with _lock:
+                sess.resume_id += 1      # 有人声了，作废悔棋后的兜底定时器
+        if undone:
+            # 注意顺序：先按「本次有人声」把编号推上去，再登记兜底定时器拿最新编号，
+            # 否则同一个请求里紧接着的 resume_id += 1 会把它当场作废（实测踩过）。
+            schedule_after_undo(sess)   # 主人其实说完了就别干等 9884 的 6s 超时
         if speech:
             ev["state"] = "listening"
         return ev
