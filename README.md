@@ -64,6 +64,8 @@ config/              环境变量示例（无真实地址/口令）
 - [x] 手机端最小壳 `client/android-lite`
 - [ ] `brain/` 代码抽离（对面在整理）
 
+参与之前先读 [CONTRIBUTING.md](CONTRIBUTING.md)：**推之前必须 python sanitize.py . 输出「干净」**，rain/ 另有额外要求。
+
 ## 快速开始（边缘侧）
 
 ```bash

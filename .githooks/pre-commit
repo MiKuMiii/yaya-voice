@@ -1,0 +1,39 @@
+#!/bin/sh
+# 提交前自动跑 sanitize.py：不干净就拒绝提交。
+# 装：git config core.hooksPath .githooks
+# 临时跳过：git commit --no-verify
+
+set -e
+
+PY=""
+for c in python python3 py; do
+  if command -v "$c" >/dev/null 2>&1; then PY="$c"; break; fi
+done
+
+if [ -z "$PY" ]; then
+  echo "[pre-commit] 找不到 python，跳过 sanitize 检查（请自行确认没有敏感内容）" >&2
+  exit 0
+fi
+
+if [ ! -f sanitize.py ]; then
+  echo "[pre-commit] 仓库根目录没有 sanitize.py，跳过" >&2
+  exit 0
+fi
+
+out=$("$PY" sanitize.py . 2>&1) || {
+  echo "$out" >&2
+  echo "" >&2
+  echo "[pre-commit] sanitize.py 执行失败，提交已拒绝。" >&2
+  exit 1
+}
+
+printf '%s\n' "$out"
+
+case "$out" in
+  *"干净"*) exit 0 ;;
+esac
+
+echo "" >&2
+echo "[pre-commit] 扫到敏感内容或禁入文件，提交已拒绝。" >&2
+echo "[pre-commit] 改干净再提交；确需跳过用 git commit --no-verify（不推荐）。" >&2
+exit 1
