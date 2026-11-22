@@ -166,3 +166,10 @@ Windows ICS 的 DHCP **没有 MAC 绑定**，固定 IP 做不到。
 **37. 别把 `me` 字段当身份指纹**
 对端把 `me` 从「电脑」改成「笔记本」，我据此推断「换机器了」并提醒搬数据 —— 主人说只是改名。
 判断换机要看进程启动时间/文件连续性，或者直接问。
+
+**38. 走 SSH 推 GitHub：反斜杠会被吃、环境变量会盖住配置**
+`GIT_SSH_COMMAND='ssh -i C:\Users\me\.ssh\key'` 会让 ssh 报
+`Identity file C:Usersme.sshyaya_github not accessible` —— 这串 git 还要再拆一次命令行，
+`\U`、`\.` 都被当转义吃掉了。更坑的是：改成正斜杠写进 `core.sshCommand` 之后仍然失败，
+因为 `GIT_SSH_COMMAND` 环境变量优先级更高，得先 `Remove-Item Env:GIT_SSH_COMMAND`。
+在 github.com:443 被掐的网络上，`ssh://git@ssh.github.com:443/<owner>/<repo>.git` 是可行通道。
