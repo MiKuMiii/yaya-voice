@@ -159,11 +159,22 @@ def prompt_text() -> str:
 
 LANGS = ("zh", "en", "ja", "ko", "yue", "auto", "all_zh", "all_ja")
 
+# 主人要求「雅雅」念第二声（yá yá）。汉字「雅」是第三声，模型念出来是下坠调，
+# 听着发闷；换成同音的「牙」就是第二声，字幕照旧写「雅雅」。
+# 只改送进 TTS 的文本，不改任何对外字段。VOICE_NAME_SAY=off 可关掉。
+NAME_SAY = os.environ.get("VOICE_NAME_SAY", "牙牙")
+NAME_WRITE = "雅雅"
+
+
+def say(text: str) -> str:
+    """把要念出来的文本里的名字换成第二声写法。"""
+    if not NAME_SAY or NAME_SAY == NAME_WRITE:
+        return text
+    return text.replace(NAME_WRITE, NAME_SAY)
+
 
 def tts_params(text: str) -> dict:
-    if not REF_WAV:
-        raise RuntimeError("没配参考音：设 VOICE_REF 指向 3~10 秒的干声 wav（TTS 必需）")
-    return dict(text=text, text_lang="zh", ref_audio_path=REF_WAV, prompt_text=prompt_text(),
+    return dict(text=say(text), text_lang="zh", ref_audio_path=REF_WAV, prompt_text=prompt_text(),
                 prompt_lang=PROMPT_LANG, top_k=TTS_TOP_K, top_p=TTS_TOP_P, temperature=TTS_TEMP,
                 text_split_method="cut5", batch_size=1, speed_factor=TTS_SPEED,
                 media_type="raw", streaming_mode=TTS_MODE, seed=42)
