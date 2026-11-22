@@ -1,0 +1,17 @@
+# 语音机侧（edge / vad / hub）
+# 版本是实测可用的组合，不是最新版；升级前先看 docs/PITFALLS.md
+fastapi>=0.110,<1.0
+uvicorn>=0.27,<1.0
+numpy>=1.26
+requests>=2.31
+
+# 低通/重采样（VOICE_LP 打开时需要）
+scipy>=1.11
+
+# 唤醒（可选；不给模型路径就不需要）
+openwakeword>=0.6
+onnxruntime>=1.17
+
+# VAD（可选：只用 /vad_stream 才需要）
+funasr>=1.1
+torch>=2.1
