@@ -848,8 +848,9 @@ def run_turn(sess: Session, user_text: str, want_filler: bool, seq: int):
                            "audio_b64": b64_wav(pcm, sr), "sr": sr, "more": "",
                            "budget_ms": REPLY_BUDGET_MS})
                 if first:
-                    log.info("sid=%s reply first seg %.2fs after brain piece (%.2fs since turn start)",
-                             sess.sid, time.time() - piece_t0, time.time() - t_turn)
+                    log.info("sid=%s reply first seg %.2fs after brain piece (%.2fs since turn start) ts=%dms",
+                             sess.sid, time.time() - piece_t0, time.time() - t_turn,
+                             int(time.time() * 1000))
                 _part[0] += 1
                 n_piece += 1
 
@@ -946,7 +947,8 @@ async def voice_edge(request: Request):
         with _lock:
             fq = sess.filler_q
             sess.filler_q = None
-        log.info("sid=%s filler delivered (deferred) %.0fms", sid, (time.time() - t0) * 1000)
+        log.info("sid=%s filler delivered (deferred) %.0fms ts=%dms", sid, (time.time() - t0) * 1000,
+                 int(time.time() * 1000))
         return fq
 
     if body.get("force"):
@@ -1076,7 +1078,8 @@ async def voice_edge(request: Request):
         pend = {"text": text, "t": time.time()}
         sess.pending = pend
         schedule_pending(sess, pend)
-        log.info("sid=%s end: text=%r -> grace %dms", sid, text[:30], TURN_GRACE_MS)
+        log.info("sid=%s end: text=%r -> grace %dms ts=%dms", sid, text[:30], TURN_GRACE_MS,
+                 int(time.time() * 1000))
         return {"event": "recording", "state": "listening", "sid": sid}
 
     ev = fire_turn(sess, text, False)

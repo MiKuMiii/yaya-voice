@@ -1,0 +1,44 @@
+{
+  "_说明": "这是示例配置，复制成 config/voice.json 后改。真实地址与口令不要提交（.gitignore 已排除 config/*.json）。",
+  "listen": { "host": "0.0.0.0", "port": 8780 },
+  "code": "",
+  "brain": {
+    "url": "http://192.168.137.10:8777",
+    "ics_prefix": "192.168.137.",
+    "fallbacks": [],
+    "connect_timeout_s": 4,
+    "first_byte_timeout_s": 6,
+    "total_timeout_s": 30
+  },
+  "turn": {
+    "awake_keep_s": 30,
+    "idle_reset_s": 20,
+    "grace_ms": 700,
+    "budget_ms": 4000,
+    "first_piece_max_chars": 25,
+    "pre_roll_packets": 4
+  },
+  "kws": {
+    "enabled": true,
+    "models": { "yaya_v1": 0.93, "yaya_hey_v1": 0.99 },
+    "need_frames": 2,
+    "peak_min": 1200,
+    "peak_window_s": 2.0,
+    "cooldown_s": 3.0,
+    "asr_confirm": true,
+    "dump_dir": ""
+  },
+  "tts": {
+    "url": "http://127.0.0.1:9880",
+    "ref_audio_path": "",
+    "prompt_text_file": "",
+    "prompt_lang": "zh",
+    "speed": 1.0,
+    "streaming_mode": 3,
+    "segment_sec": 0.9,
+    "lowpass_hz": 0,
+    "filler_text": "嗯……让我想想啊。"
+  },
+  "vad": { "url": "http://127.0.0.1:9884", "quiet_close_ms": 1800, "min_seg_ms": 350, "max_seg_ms": 12000 },
+  "asr": { "url": "http://127.0.0.1:9883" }
+}
