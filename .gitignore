@@ -1,3 +1,11 @@
+# 编译产物
+build/
+*.apk
+*.aab
+*.idsig
+*.dex
+*.class
+
 # 日志与运行产物
 *.log
 logs/
@@ -5,21 +13,27 @@ _dump/
 mail/
 *.jsonl
 
-# 音频与模型（体积大、许可见各自仓库）
-*.wav
-*.mp3
-*.m4a
+# 模型与音频（体积大、许可见各自仓库）
 *.onnx
 *.pth
 *.ckpt
+*.safetensors
+*.bin
 *.index
+*.wav
+*.mp3
+*.flac
+*.m4a
+*.ogg
 models/
 
-# 本地配置（真实地址、口令）
+# 本地配置与密钥（真实地址、口令）
 config/*.json
 !config/*.example.json
-.env
 *.local.json
+*.key
+key.txt
+.env
 
 # Python
 __pycache__/
@@ -31,4 +45,5 @@ venv/
 .vscode/
 .idea/
 Thumbs.db
+.DS_Store
 desktop.ini
