@@ -65,8 +65,8 @@ schtasks /create /tn "Yaya Voice Hub Watch" /tr "<venv>\pythonw.exe -u <repo>\hu
 
 ```powershell
 # 语音入口与信箱都要放行，且只放行内网段
-New-NetFirewallRule -DisplayName "Voice Edge 8780" -Direction Inbound -Action Allow -Protocol TCP -LocalPort 8780 -RemoteAddress 192.168.31.0/24
-New-NetFirewallRule -DisplayName "Voice Mail 8790" -Direction Inbound -Action Allow -Protocol TCP -LocalPort 8790 -RemoteAddress 192.168.31.0/24
+New-NetFirewallRule -DisplayName "Voice Edge 8780" -Direction Inbound -Action Allow -Protocol TCP -LocalPort 8780 -RemoteAddress 192.168.1.0/24
+New-NetFirewallRule -DisplayName "Voice Mail 8790" -Direction Inbound -Action Allow -Protocol TCP -LocalPort 8790 -RemoteAddress 192.168.1.0/24
 ```
 
 `New-NetFirewallRule` 需要管理员。非管理员会话里会报 `拒绝访问`，

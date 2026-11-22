@@ -1261,4 +1261,5 @@ if __name__ == "__main__":
     threading.Thread(target=reaper, daemon=True).start()
     threading.Thread(target=filler_retry, daemon=True).start()
     threading.Thread(target=brain_watch, daemon=True).start()
-    uvicorn.run(app, host="0.0.0.0", port=8780, log_config=None, access_log=False)
+    uvicorn.run(app, host=os.environ.get("VOICE_HOST", "0.0.0.0"),
+            port=int(os.environ.get("VOICE_PORT", "8780")), log_config=None, access_log=False)
